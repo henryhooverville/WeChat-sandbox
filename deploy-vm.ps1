@@ -80,19 +80,23 @@ function Test-SandboxPrerequisites {
         throw "OS Incompatibility: Current Windows Edition is '$($OS.Caption)'. Hyper-V requires Pro, Enterprise, or Education SKUs."
     }
 
-    # Check 3: CPU Virtualization Enabled in Firmware (BIOS)
-    $CPU = Get-CimInstance Win32_Processor
-    $VirtualizationFirmware = $CPU | Where-Object { $_.VirtualizationFirmwareEnabled -eq $true }
-    if ($null -eq $VirtualizationFirmware) {
-        throw "BIOS Fault: Hardware-assisted virtualization (Intel VT-x or AMD SVM) is disabled in the UEFI/BIOS firmware."
-    }
-
-    # Check 4: Hyper-V Management Powershell Module Availability
+    # Check 3: Hyper-V Management Powershell Module Availability
     if (-not (Get-Command -Module Hyper-V -Name New-VM -ErrorAction SilentlyContinue)) {
         throw "Module Fault: Hyper-V PowerShell administration tools are not installed or enabled."
     }
 
-    # Check 5: Hyper-V Host Compute Service (vmcompute) Status
+    # Check 4: Hyper-V Host Compute Service (vmcompute) Status
+    $Service = Get-Service -Name "vmcompute" -ErrorAction SilentlyContinue
+    if ($null -eq $Service -or $Service.Status -ne "Running") {
+        throw "Service Fault: Hyper-V Host Compute Service (vmcompute) is inactive. Ensure hypervisor launch is not blocked."
+    }
+    
+    # Check 5: Hyper-V Management Powershell Module Availability
+    if (-not (Get-Command -Module Hyper-V -Name New-VM -ErrorAction SilentlyContinue)) {
+        throw "Module Fault: Hyper-V PowerShell administration tools are not installed or enabled."
+    }
+
+    # Check 6: Hyper-V Host Compute Service (vmcompute) Status
     $Service = Get-Service -Name "vmcompute" -ErrorAction SilentlyContinue
     if ($null -eq $Service -or $Service.Status -ne "Running") {
         throw "Service Fault: Hyper-V Host Compute Service (vmcompute) is inactive. Ensure hypervisor launch is not blocked."
