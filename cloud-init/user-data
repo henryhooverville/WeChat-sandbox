@@ -56,6 +56,6 @@ autoinstall:
       - ansible
     runcmd:
       # Clone our flat repository
-      - git clone https://github.com/YOUR_ORG/wechat-sandbox.git /opt/wechat-sandbox
+      - git clone https://github.com/henryhooverville/WeChat-sandbox.git /opt/wechat-sandbox
       # Run the playbook from the newly flattened path
       - ansible-playbook /opt/wechat-sandbox/ansible/playbook.yml -c local -i localhost,
