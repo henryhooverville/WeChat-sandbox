@@ -54,7 +54,7 @@ function Write-Log {
     
     # Write to PowerShell output streams for RMM capturing
     switch ($Level) {
-        "ERROR"   { Write-Error $LogEntry }
+        "ERROR"   { Write-Error $LogEntry -ErrorAction Continue }
         "WARN"    { Write-Warning $LogEntry }
         "SUCCESS" { Write-Output $LogEntry }
         Default   { Write-Output $LogEntry }
@@ -86,17 +86,6 @@ function Test-SandboxPrerequisites {
     }
 
     # Check 4: Hyper-V Host Compute Service (vmcompute) Status
-    $Service = Get-Service -Name "vmcompute" -ErrorAction SilentlyContinue
-    if ($null -eq $Service -or $Service.Status -ne "Running") {
-        throw "Service Fault: Hyper-V Host Compute Service (vmcompute) is inactive. Ensure hypervisor launch is not blocked."
-    }
-    
-    # Check 5: Hyper-V Management Powershell Module Availability
-    if (-not (Get-Command -Module Hyper-V -Name New-VM -ErrorAction SilentlyContinue)) {
-        throw "Module Fault: Hyper-V PowerShell administration tools are not installed or enabled."
-    }
-
-    # Check 6: Hyper-V Host Compute Service (vmcompute) Status
     $Service = Get-Service -Name "vmcompute" -ErrorAction SilentlyContinue
     if ($null -eq $Service -or $Service.Status -ne "Running") {
         throw "Service Fault: Hyper-V Host Compute Service (vmcompute) is inactive. Ensure hypervisor launch is not blocked."
@@ -201,7 +190,7 @@ function New-SandboxVM {
     try {
         if (-not (Get-VM -Name $VMName -ErrorAction SilentlyContinue)) {
             # Provision base VM config
-            New-VM -Name $VMName -MemoryStartupBytes $MemoryBytes -Generation 2 -NewVHDPath $VHDPath -VHDSizeBytes ($VHDSizeGB * 1GB) -SwitchName $SwitchName | Out-Null
+            New-VM -Name $VMName -MemoryStartupBytes $MemoryBytes -Generation 2 -NewVHDPath $VHDPath -NewVHDSizeBytes ($VHDSizeGB * 1GB) -SwitchName $SwitchName | Out-Null
             Set-VM -Name $VMName -ProcessorCount 2
             Set-VMFirmware -VMName $VMName -EnableSecureBoot On -SecureBootTemplate "MicrosoftUEFICertificateAuthority"
             
@@ -258,7 +247,7 @@ try {
     $SubnetPrefix       = "192.168.250.0/24"
     $VirtualAdapterName = "vEthernet ($SwitchName)"
     $VHDPath            = "$WorkingDir\$VMName.vhdx"
-    $UbuntuIso          = "$WorkingDir\ubuntu-24.04-live-server-amd64.iso"
+    $UbuntuIso          = "$WorkingDir\ubuntu-26.04-live-server-amd64.iso"
     $CloudInitIso       = "$WorkingDir\cidata.iso"
 
     $MemoryBytes = switch ($VMMemory) {
