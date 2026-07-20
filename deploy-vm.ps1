@@ -209,7 +209,7 @@ function New-SandboxVM {
 
         # Apply Zero-Trust Hypervisor Port ACL Boundaries (Safely runs hot on existing VMs)
         Write-Log "Verifying hypervisor layer egress ACL rules..."
-        Remove-VMNetworkAdapterAcl -VMName $VMName -ErrorAction SilentlyContinue
+        Get-VMNetworkAdapterAcl -VMName $VMName | Remove-VMNetworkAdapterAcl -VMName $VMName -ErrorAction SilentlyContinue
 
         # Rule 1: Allow Layer-2 link mapping to the localized gateway
         Add-VMNetworkAdapterAcl -VMName $VMName -RemoteIPAddress $GatewayIP -Direction Outbound -Action Allow
