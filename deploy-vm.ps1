@@ -162,8 +162,8 @@ function Get-SandboxAssets {
 
     try {
         if (-not (Test-Path -Path $UbuntuIso)) {
-            Write-Log "Downloading Ubuntu 24.04 Server ISO..."
-            Invoke-WebRequest -Uri "https://releases.ubuntu.com/resolute/ubuntu-24.04-live-server-amd64.iso" -OutFile $UbuntuIso -UseBasicParsing
+            Write-Log "Downloading Ubuntu 26.04 Server ISO..."
+            Invoke-WebRequest -Uri "https://releases.ubuntu.com/resolute/ubuntu-26.04-live-server-amd64.iso" -OutFile $UbuntuIso -UseBasicParsing
             Write-Log "Ubuntu ISO download completed successfully." -Level "SUCCESS"
         }
 
