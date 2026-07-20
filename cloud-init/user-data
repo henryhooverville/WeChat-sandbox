@@ -1,0 +1,61 @@
+#cloud-config
+autoinstall:
+  version: 1
+  # Ensures a completely hands-off installation with zero user prompts
+  interactive-sections: []
+  
+  # Locale and keyboard regional configurations
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+    variant: ""
+
+  # Hardcode the static IP for our custom NAT network so the installer has internet access
+  network:
+    version: 2
+    ethernets:
+      eth0:
+        dhcp4: false
+        addresses:
+          - 192.168.250.10/24
+        routes:
+          - to: default
+            via: 192.168.250.1
+        nameservers:
+          addresses:
+            - 8.8.8.8
+            - 208.67.222.222
+
+  # Direct disk partitioning (simple, fast, avoids complex LVM overhead)
+  storage:
+    layout:
+      name: direct
+
+  # Create the admin user for the installer stage (Required by Subiquity)
+  identity:
+    hostname: wechat-sandbox
+    realname: System Admin
+    username: sysadmin
+    # Setting an arbitrary, highly complex dummy password hash.
+    # Because SSH is blocked and password authentication is disabled, 
+    # this user cannot be logged into remotely.
+    password: "$6$rounds=4096$wechatsandboxdummypasswordhash"
+
+  # Automatically reboot the VM once the installation completes
+  shutdown: reboot
+
+  # Hand off post-install configuration to the installed OS's Cloud-Init on first boot
+  user-data:
+    users:
+      - name: wechat-user
+        gecos: WeChat Guest
+        groups: nopasswdlogin
+    package_update: true
+    packages:
+      - git
+      - ansible
+    runcmd:
+      # Clone our flat repository
+      - git clone https://github.com/YOUR_ORG/wechat-sandbox.git /opt/wechat-sandbox
+      # Run the playbook from the newly flattened path
+      - ansible-playbook /opt/wechat-sandbox/ansible/playbook.yml -c local -i localhost,
