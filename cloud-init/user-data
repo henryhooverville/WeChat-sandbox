@@ -38,6 +38,10 @@ autoinstall:
   # FIRST-BOOT TARGET CONFIGURATION (Runs completely as root)
   # ==========================================================================
   user-data:
+    swap:
+      filename: /swapfile
+      size: auto
+      maxsize: 8589934592 # 8GB in bytes
     package_update: true
     packages:
       - git
