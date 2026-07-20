@@ -32,7 +32,7 @@ autoinstall:
     hostname: wechat-sandbox
     realname: System Admin
     username: sysadmin
-    password: "$6$V7bIuX9mKz1p$O5A3zR8dQxNW8vK3gY6mE9sT2fB4lC1vX7zK9pM4nR2uV6wB8xD1yZ3qA5sE7fG9hI1kK3mN5oP7qR9sT1uV3w"
+    password: "$6$GELQo8tegk262462$OOf8rZqvp.TTOhEWw.7EchXmVxdJFMRC5ITiRomHceG3hdmEL0wiy1SR8Zq0AueL8KZt6FcapWItdzP/A70Te0"
 
   # ==========================================================================
   # FIRST-BOOT TARGET CONFIGURATION (Runs completely as root)
