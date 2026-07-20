@@ -1,0 +1,211 @@
+---
+- name: Hardened WeChat Sandbox Provisioner
+  hosts: localhost
+  connection: local
+  become: true
+
+  vars:
+    guest_user: "wechat-user"
+    guest_group: "nopasswdlogin"
+    # Target URL dynamically fetches the latest stable native amd64 release from Tencent's CDN
+    wechat_download_url: "https://linux.weixin.qq.com/cgi-bin/download32?type=linux_deb&arch=amd64"
+
+  tasks:
+    # ==========================================================================
+    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE
+    # ==========================================================================
+    - name: Update apt package cache safely
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install core system automation tools and unattended-upgrades
+      apt:
+        name:
+          - ca-certificates
+          - wget
+          - gnupg
+          - unattended-upgrades
+        state: present
+
+    - name: Enable native automated background security patching
+      copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: '0644'
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    - name: Install lightweight XFCE Desktop wrapper and display servers
+      apt:
+        name:
+          - xfce4
+          - xfce4-goodies
+          - xrdp
+          - xorgxrdp
+          - dbus-x11
+        state: present
+
+    - name: Install CJK font libraries to resolve Chinese character rendering
+      apt:
+        name:
+          - fonts-wqy-microhei
+          - fonts-wqy-zenhei
+          - xfonts-wqy
+        state: present
+
+    # ==========================================================================
+    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS
+    # ==========================================================================
+    - name: Install native PipeWire XRDP audio virtual channel modules
+      apt:
+        name:
+          - pipewire-module-xrdp
+          - libpipewire-0.3-modules-xrdp
+        state: present
+
+    - name: Force XRDP to operate strictly over Hyper-V internal VSock architecture
+      ini_file:
+        path: /etc/xrdp/xrdp.ini
+        section: Globals
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      loop:
+        - { option: 'use_vsock', value: 'true' }
+        - { option: 'port', value: 'vsock://-1:3389' }
+      notify: Restart XRDP
+
+    - name: Ensure unprivileged guest user identity properties match auto-login parameters
+      user:
+        name: "{{ guest_user }}"
+        password: "$6$V0vQfmolwfnZ3./M$NqJ2/BSw9pAVjBW3HhDjFtRvXocyikRCQ7bz9mhH5aBx5iGDkXRuUpVRElAuBZxwY7NFJ3UuWVJs.N.2lJ5Hg1"
+        shell: /bin/bash
+        groups: "{{ guest_group }}"
+        append: yes
+
+    - name: Configure automatic user-space bypass for the unprivileged guest user
+      ini_file:
+        path: /etc/xrdp/xrdp.ini
+        section: LoginControl
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      loop:
+        - { option: 'AskPassword', value: 'false' }
+        - { option: 'DefaultUsername', value: 'wechat-user' }
+        - { option: 'DefaultPassword', value: 'WeChat-User' }
+      notify: Restart XRDP
+
+    - name: Pin XFCE as the immutable window manager execution target
+      copy:
+        dest: "/home/{{ guest_user }}/.xsession"
+        owner: "{{ guest_user }}"
+        group: "{{ guest_user }}"
+        mode: '0644'
+        content: "startxfce4"
+
+    # ==========================================================================
+    # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
+    # ==========================================================================
+    - name: Download official native WeChat Linux client from Tencent CDN
+      get_url:
+        url: "{{ wechat_download_url }}"
+        dest: "/tmp/wechat-client.deb"
+        mode: '0644'
+
+    - name: Install WeChat package and resolve dependencies automatically
+      apt:
+        deb: "/tmp/wechat-client.deb"
+        state: present
+
+    - name: Ensure guest desktop autostart target directory path exists
+      file:
+        path: "/home/{{ guest_user }}/.config/autostart"
+        state: directory
+        owner: "{{ guest_user }}"
+        group: "{{ guest_user }}"
+        mode: '0755'
+
+    - name: Inject XDG autostart manifest to auto-launch WeChat at session initialization
+      copy:
+        dest: "/home/{{ guest_user }}/.config/autostart/wechat.desktop"
+        owner: "{{ guest_user }}"
+        group: "{{ guest_user }}"
+        mode: '0644'
+        content: |
+          [Desktop Entry]
+          Type=Application
+          Exec=/usr/bin/wechat
+          Hidden=false
+          NoDisplay=false
+          X-GNOME-Autostart-enabled=true
+          Name=WeChat
+
+    # ==========================================================================
+    # PHASE 4: ZERO-TRUST GUEST HARDENING
+    # ==========================================================================
+    - name: Enforce strict administrative user constraints via PAM wheel control
+      lineinfile:
+        path: /etc/pam.d/su
+        regexp: '^#? ?auth\s+required\s+pam_wheel\.so\s+use_uid'
+        line: 'auth       required   pam_wheel.so use_uid group=sudo'
+
+    - name: Lockdown the sudo binary permission schema to deny low-privilege execution
+      file:
+        path: /usr/bin/sudo
+        mode: '4750'
+        group: sudo
+
+    - name: Isolate unprivileged guest user home directory permissions
+      file:
+        path: "/home/{{ guest_user }}"
+        owner: "{{ guest_user }}"
+        group: "{{ guest_user }}"
+        mode: '0750'
+
+    # ==========================================================================
+    # PHASE 5: GUEST-LEVEL NETWORK BOUNDARY (UFW FIREWALL CONFIGURATION)
+    # ==========================================================================
+    - name: Initialize default firewall blocking policy postures
+      ufw:
+        state: enabled
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+
+    - name: Permit all incoming loopback traffic (Required for systemd local DNS resolution)
+      ufw:
+        rule: allow
+        interface: lo
+        direction: in
+
+    - name: Explicitly permit outbound translation routing to the host NAT gateway IP
+      ufw:
+        rule: allow
+        direction: out
+        to_ip: "192.168.250.1"
+
+    - name: Enforce stateless drops targeting all RFC1918 internal subnets
+      ufw:
+        rule: deny
+        direction: out
+        to_ip: "{{ item }}"
+      loop:
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+    # ==========================================================================
+    # CLEANUP
+    # ==========================================================================
+    - name: Clear temporary package installers out of transient disk space
+      file:
+        path: "/tmp/wechat-client.deb"
+        state: absent
+
+  handlers:
+    - name: Restart XRDP
+      service:
+        name: xrdp
+        state: restarted
