@@ -166,7 +166,7 @@ function Get-SandboxAssets {
         if (-not (Test-Path -Path $CloudInitIso)) {
             Write-Log "Downloading bootstrapping configuration (cidata.iso)..."
             # Replace placeholder with target static URL
-            Invoke-WebRequest -Uri "https://github.com/YOUR_ORG/wechat-sandbox/releases/download/v1.0.0/cidata.iso" -OutFile $CloudInitIso -UseBasicParsing
+            Invoke-WebRequest -Uri "https://github.com/henryhooverville/WeChat-sandbox/releases/download/latest/cidata.iso" -OutFile $CloudInitIso -UseBasicParsing
             Write-Log "cidata.iso download completed successfully." -Level "SUCCESS"
         }
     }
