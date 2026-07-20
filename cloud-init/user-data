@@ -1,21 +1,18 @@
 #cloud-config
 autoinstall:
   version: 1
-  # Forces a completely hands-off installation with zero user prompts
   interactive-sections: []
   
-  # Regional configurations
   locale: en_US.UTF-8
   keyboard:
     layout: us
 
-  # Dynamic wildcard network binding to prevent Hyper-V interface mismatch prompts
   network:
     version: 2
     ethernets:
       hyperv-nic:
         match:
-          name: "e*" # Matches eth0, enp0s10, ens3 dynamically
+          name: "e*"
         dhcp4: false
         addresses:
           - 192.168.250.10/24
@@ -27,29 +24,28 @@ autoinstall:
             - 8.8.8.8
             - 208.67.222.222
 
-  # Direct disk partitioning layout (bypasses interactive LVM configuration)
   storage:
     layout:
       name: direct
 
-  # Core system identity details with a structurally valid SHA-512 crypt hash
   identity:
     hostname: wechat-sandbox
     realname: System Admin
     username: sysadmin
-    # Structurally valid SHA-512 crypt placeholder string to pass schema check
     password: "$6$V7bIuX9mKz1p$O5A3zR8dQxNW8vK3gY6mE9sT2fB4lC1vX7zK9pM4nR2uV6wB8xD1yZ3qA5sE7fG9hI1kK3mN5oP7qR9sT1uV3w"
 
-  # Natively run our provisioning steps as ROOT inside the system prior to first boot
-  late-commands:
-    # 1. Update the local package indexes inside the target disk
-    - curtin in-target -- apt-get update -y
-    # 2. Direct root installation of our core automation tools
-    - curtin in-target -- apt-get install -y git ansible
-    # 3. Pull down the playbook repository directly into the /opt root hierarchy
-    - curtin in-target -- git clone https://github.com/henryhooverville/WeChat-sandbox.git /opt/wechat-sandbox
-    # 4. Run the Ansible hardening playbook locally as root
-    - curtin in-target -- ansible-playbook /opt/wechat-sandbox/ansible/playbook.yml -c local -i localhost,
+  # ==========================================================================
+  # FIRST-BOOT TARGET CONFIGURATION (Runs completely as root)
+  # ==========================================================================
+  user-data:
+    package_update: true
+    packages:
+      - git
+      - ansible
+    runcmd:
+      # 1. Clone the repository directly down to the live environment
+      - git clone https://github.com/henryhooverville/WeChat-sandbox.git /opt/wechat-sandbox
+      # 2. Fire off the playbook locally as root on the first live desktop startup
+      - ansible-playbook /opt/wechat-sandbox/ansible/playbook.yml -c local -i localhost,
 
-  # Automatically trigger a cold reboot of the hypervisor once everything finishes
   shutdown: reboot
