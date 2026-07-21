@@ -63,7 +63,7 @@
         state: present
 
     # ==========================================================================
-    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS (MINIMAL)
+    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS (STABILIZED)
     # ==========================================================================
 
     # 1. Enable Hyper-V VSOCK kernel module driver on boot
@@ -73,33 +73,42 @@
         content: "hv_sock"
         mode: '0644'
 
-    # 2. Configure XRDP to use Hyper-V VSOCK transport & basic RDP security
-    - name: Configure XRDP Globals for Hyper-V VSOCK
-      ansible.builtin.lineinfile:
+    # 2. Configure XRDP Globals natively via ini_file (un-greys Enhanced Session)
+    - name: Force XRDP to operate strictly over Hyper-V VSock architecture
+      ansible.builtin.ini_file:
         path: /etc/xrdp/xrdp.ini
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        insertafter: '^\[Globals\]'
+        section: Globals
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
       loop:
-        - { regexp: '^#?use_vsock=', line: 'use_vsock=true' }
-        - { regexp: '^#?port=', line: 'port=vsock://-1:3389' }
-        - { regexp: '^#?security_layer=', line: 'security_layer=rdp' }
-        - { regexp: '^#?autorun=', line: 'autorun=Xorg' }
+        - { option: 'use_vsock', value: 'true' }
+        - { option: 'port', value: 'vsock://-1:3389' }
+        - { option: 'security_layer', value: 'rdp' }
+        - { option: 'autorun', value: 'Xorg' }
       notify: Restart XRDP
 
-    # 3. Set auto-login credentials in XRDP Xorg target
-    - name: Configure auto-login credentials in XRDP Xorg section
-      ansible.builtin.lineinfile:
+    # 3. Configure auto-login credentials natively in Xorg target section
+    - name: Configure XRDP Xorg Auto-Login Credentials
+      ansible.builtin.ini_file:
         path: /etc/xrdp/xrdp.ini
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        insertafter: '^\[Xorg\]'
+        section: Xorg
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
       loop:
-        - { regexp: '^username=', line: 'username=wechat-user' }
-        - { regexp: '^password=', line: 'password=WeChat-User' }
+        - { option: 'username', value: 'wechat-user' }
+        - { option: 'password', value: 'WeChat-User' }
       notify: Restart XRDP
 
-    # 4. Create guest user account with home directory
+    # 4. Permit non-console users to spin up Xorg instances (prevents input/GUI freeze)
+    - name: Allow non-console users to launch Xorg display server
+      ansible.builtin.lineinfile:
+        path: /etc/X11/Xwrapper.config
+        regexp: '^allowed_users='
+        line: 'allowed_users=anybody'
+        create: yes
+        mode: '0644'
+
+    # 5. Create guest user account bound to primary guest_group
     - name: Ensure guest user exists
       ansible.builtin.user:
         name: "{{ guest_user }}"
@@ -108,7 +117,7 @@
         shell: /bin/bash
         create_home: yes
 
-    # 5. Bind XFCE desktop session (mode 0755 prevents GUI freeze)
+    # 6. Bind XFCE executable session target (mode 0755 prevents GUI freeze)
     - name: Pin XFCE executable session target
       ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
