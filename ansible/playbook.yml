@@ -46,6 +46,14 @@
           - dbus-x11
         state: present
 
+    - name: Allow non-console users to launch Xorg display server
+      ansible.builtin.lineinfile:
+        path: /etc/X11/Xwrapper.config
+        regexp: '^allowed_users='
+        line: 'allowed_users=anybody'
+        create: yes
+        mode: '0644'
+
     - name: Install CJK font libraries to resolve Chinese character rendering
       apt:
         name:
