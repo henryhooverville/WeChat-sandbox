@@ -218,14 +218,13 @@
         path: "/tmp/wechat-client.deb"
         state: absent
 
+    - name: Schedule delayed reboot post-provisioning
+      ansible.builtin.shell: "sleep 5 && shutdown -r now 'Ansible provisioning complete'"
+      async: 1
+      poll: 0
+
   handlers:
     - name: Restart XRDP
       service:
         name: xrdp
         state: restarted
-
-# Replace ansible.builtin.reboot with this:
-    - name: Schedule delayed reboot post-provisioning
-      ansible.builtin.shell: "sleep 5 && shutdown -r now 'Ansible provisioning complete'"
-      async: 1
-      poll: 0
