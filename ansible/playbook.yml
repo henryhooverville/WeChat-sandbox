@@ -71,11 +71,12 @@
         path: /etc/xrdp/xrdp.ini
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
+        insertafter: '^\[Globals\]'
       loop:
-        - { regexp: '^use_vsock=', line: 'use_vsock=true' }
-        - { regexp: '^port=', line: 'port=vsock://-1:3389' }
-        - { regexp: '^security_layer=', line: 'security_layer=rdp' }
-        - { regexp: '^autorun=', line: 'autorun=Xorg' }
+        - { regexp: '^#?use_vsock=', line: 'use_vsock=true' }
+        - { regexp: '^#?port=', line: 'port=vsock://-1:3389' }
+        - { regexp: '^#?security_layer=', line: 'security_layer=rdp' }
+        - { regexp: '^#?autorun=', line: 'autorun=Xorg' }
       notify: Restart XRDP
 
     # 3. Set auto-login credentials in XRDP Xorg target
