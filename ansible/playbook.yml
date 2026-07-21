@@ -165,7 +165,7 @@
       file:
         path: "/home/{{ guest_user }}"
         owner: "{{ guest_user }}"
-        group: "{{ guest_user }}"
+        group: "{{ guest_group }}"
         mode: '0750'
 
     # ==========================================================================
