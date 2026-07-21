@@ -105,7 +105,7 @@
       ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
-        group: "{{ guest_user }}"
+        group: "{{ guest_group }}"
         mode: '0755'
         content: "startxfce4"
 
