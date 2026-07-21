@@ -73,9 +73,6 @@
         loop:
           - { option: 'use_vsock', value: 'true' }
           - { option: 'port', value: 'vsock://-1:3389' }
-          - { option: 'security_layer', value: 'rdp' } # Prevents 4-loop TLS handshake failure
-          - { option: 'autorun', value: 'Xorg' }        # Instructs XRDP to execute the Xorg section automatically
-      notify: Restart XRDP
 
     - name: Ensure unprivileged guest user identity properties match auto-login parameters
       user:
@@ -102,7 +99,7 @@
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
         group: "{{ guest_user }}"
-        mode: '0644'
+        mode: '0755'
         content: "startxfce4"
 
     - name: Prevent Polkit color-manager popup from locking keyboard/mouse focus
