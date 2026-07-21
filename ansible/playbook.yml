@@ -8,7 +8,7 @@
     guest_user: "wechat-user"
     guest_group: "users"
     # Target URL dynamically fetches the latest stable native amd64 release from Tencent's CDN
-    wechat_download_url: "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb"
+    wechat_download_url: "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_x86_64.deb"
 
   tasks:
     # ==========================================================================
