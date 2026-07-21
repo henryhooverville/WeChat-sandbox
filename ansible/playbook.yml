@@ -70,9 +70,11 @@
         section: Globals
         option: "{{ item.option }}"
         value: "{{ item.value }}"
-      loop:
-        - { option: 'use_vsock', value: 'true' }
-        - { option: 'port', value: 'vsock://-1:3389' }
+        loop:
+          - { option: 'use_vsock', value: 'true' }
+          - { option: 'port', value: 'vsock://-1:3389' }
+          - { option: 'security_layer', value: 'rdp' } # Prevents 4-loop TLS handshake failure
+          - { option: 'autorun', value: 'Xorg' }        # Instructs XRDP to execute the Xorg section automatically
       notify: Restart XRDP
 
     - name: Ensure unprivileged guest user identity properties match auto-login parameters
@@ -82,17 +84,17 @@
         shell: /bin/bash
         groups: "{{ guest_group }}"
         append: yes
+        create_home: yes # Ensures /home/{{ guest_user }} is generated
 
-    - name: Configure automatic user-space bypass for the unprivileged guest user
+    - name: Configure automatic user-space credentials inside the XRDP Xorg session target
       ini_file:
         path: /etc/xrdp/xrdp.ini
-        section: LoginControl
+        section: Xorg
         option: "{{ item.option }}"
         value: "{{ item.value }}"
-      loop:
-        - { option: 'AskPassword', value: 'false' }
-        - { option: 'DefaultUsername', value: 'wechat-user' }
-        - { option: 'DefaultPassword', value: 'WeChat-User' }
+        loop:
+          - { option: 'username', value: "{{ guest_user }}" }
+          - { option: 'password', value: 'WeChat-User' }
       notify: Restart XRDP
 
     - name: Pin XFCE as the immutable window manager execution target
@@ -102,6 +104,18 @@
         group: "{{ guest_user }}"
         mode: '0644'
         content: "startxfce4"
+
+    - name: Prevent Polkit color-manager popup from locking keyboard/mouse focus
+      copy:
+        dest: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+        mode: '0644'
+        content: |
+          [Allow Colord for all users]
+          Identity=unix-user:*
+          Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile
+          ResultAny=yes
+          ResultInactive=yes
+          ResultActive=yes
 
     # ==========================================================================
     # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
