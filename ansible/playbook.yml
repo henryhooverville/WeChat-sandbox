@@ -209,3 +209,10 @@
       service:
         name: xrdp
         state: restarted
+
+    - name: Reboot the VM to apply all updates and initialize XRDP GUI
+      ansible.builtin.reboot:
+        msg: "Rebooting system following provisioning"
+        pre_reboot_delay: 5
+        post_reboot_delay: 15
+        reboot_timeout: 300
