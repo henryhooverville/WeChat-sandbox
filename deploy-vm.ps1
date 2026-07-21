@@ -192,6 +192,7 @@ function New-SandboxVM {
             # Provision base VM config
             New-VM -Name $VMName -MemoryStartupBytes $MemoryBytes -Generation 2 -NewVHDPath $VHDPath -NewVHDSizeBytes ($VHDSizeGB * 1GB) -SwitchName $SwitchName | Out-Null
             Set-VM -Name $VMName -ProcessorCount 2
+            Set-VMMemory -VMName $VMName -DynamicMemoryEnabled $false
             Set-VMFirmware -VMName $VMName -EnableSecureBoot On -SecureBootTemplate "MicrosoftUEFICertificateAuthority"
             
             # Attach both ISO storage drives
