@@ -55,64 +55,57 @@
         state: present
 
     # ==========================================================================
-    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS
+    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS (MINIMAL)
     # ==========================================================================
-    - name: Install native PipeWire XRDP audio virtual channel modules
-      apt:
-        name:
-          - pipewire-module-xrdp
-          - libpipewire-0.3-modules-xrdp
-        state: present
 
-    - name: Force XRDP to operate strictly over Hyper-V internal VSock architecture
-      ini_file:
+    # 1. Enable Hyper-V VSOCK kernel module driver on boot
+    - name: Ensure hv_sock module loads on boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/hv_sock.conf
+        content: "hv_sock"
+        mode: '0644'
+
+    # 2. Configure XRDP to use Hyper-V VSOCK transport & basic RDP security
+    - name: Configure XRDP Globals for Hyper-V VSOCK
+      ansible.builtin.lineinfile:
         path: /etc/xrdp/xrdp.ini
-        section: Globals
-        option: "{{ item.option }}"
-        value: "{{ item.value }}"
-        loop:
-          - { option: 'use_vsock', value: 'true' }
-          - { option: 'port', value: 'vsock://-1:3389' }
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^use_vsock=', line: 'use_vsock=true' }
+        - { regexp: '^port=', line: 'port=vsock://-1:3389' }
+        - { regexp: '^security_layer=', line: 'security_layer=rdp' }
+        - { regexp: '^autorun=', line: 'autorun=Xorg' }
+      notify: Restart XRDP
 
-    - name: Ensure unprivileged guest user identity properties match auto-login parameters
-      user:
+    # 3. Set auto-login credentials in XRDP Xorg target
+    - name: Configure auto-login credentials in XRDP Xorg section
+      ansible.builtin.lineinfile:
+        path: /etc/xrdp/xrdp.ini
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: '^\[Xorg\]'
+      loop:
+        - { regexp: '^username=', line: 'username=wechat-user' }
+        - { regexp: '^password=', line: 'password=WeChat-User' }
+      notify: Restart XRDP
+
+    # 4. Create guest user account with home directory
+    - name: Ensure guest user exists
+      ansible.builtin.user:
         name: "{{ guest_user }}"
         password: "$6$V0vQfmolwfnZ3./M$NqJ2/BSw9pAVjBW3HhDjFtRvXocyikRCQ7bz9mhH5aBx5iGDkXRuUpVRElAuBZxwY7NFJ3UuWVJs.N.2lJ5Hg1"
         shell: /bin/bash
-        groups: "{{ guest_group }}"
-        append: yes
-        create_home: yes # Ensures /home/{{ guest_user }} is generated
+        create_home: yes
 
-    - name: Configure automatic user-space credentials inside the XRDP Xorg session target
-      ini_file:
-        path: /etc/xrdp/xrdp.ini
-        section: Xorg
-        option: "{{ item.option }}"
-        value: "{{ item.value }}"
-        loop:
-          - { option: 'username', value: "{{ guest_user }}" }
-          - { option: 'password', value: 'WeChat-User' }
-      notify: Restart XRDP
-
-    - name: Pin XFCE as the immutable window manager execution target
-      copy:
+    # 5. Bind XFCE desktop session (mode 0755 prevents GUI freeze)
+    - name: Pin XFCE executable session target
+      ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
         group: "{{ guest_user }}"
         mode: '0755'
         content: "startxfce4"
-
-    - name: Prevent Polkit color-manager popup from locking keyboard/mouse focus
-      copy:
-        dest: /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
-        mode: '0644'
-        content: |
-          [Allow Colord for all users]
-          Identity=unix-user:*
-          Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile
-          ResultAny=yes
-          ResultInactive=yes
-          ResultActive=yes
 
     # ==========================================================================
     # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
