@@ -135,7 +135,7 @@
       copy:
         dest: "/home/{{ guest_user }}/.config/autostart/wechat.desktop"
         owner: "{{ guest_user }}"
-        group: "{{ guest_user }}"
+        group: "{{ guest_group }}"
         mode: '0644'
         content: |
           [Desktop Entry]
