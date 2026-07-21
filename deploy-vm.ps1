@@ -9,7 +9,7 @@ param (
     [string]$VMName = "wechat-sandbox",
 
     [Parameter(Mandatory = $false)]
-    [string]$VMMemory = "4GB",
+    [string]$VMMemory = "6GB",
 
     [Parameter(Mandatory = $false)]
     [int]$VHDSizeGB = 40,
