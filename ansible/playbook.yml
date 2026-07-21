@@ -95,6 +95,7 @@
     - name: Ensure guest user exists
       ansible.builtin.user:
         name: "{{ guest_user }}"
+        group: "{{ guest_group }}"
         password: "$6$V0vQfmolwfnZ3./M$NqJ2/BSw9pAVjBW3HhDjFtRvXocyikRCQ7bz9mhH5aBx5iGDkXRuUpVRElAuBZxwY7NFJ3UuWVJs.N.2lJ5Hg1"
         shell: /bin/bash
         create_home: yes
