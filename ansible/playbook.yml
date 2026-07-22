@@ -13,7 +13,7 @@
   tasks:
 
     # ==========================================================================
-    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE (KDE PLASMA)
+    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE (MATE)
     # ==========================================================================
     - name: Update apt package cache safely
       ansible.builtin.apt:
@@ -37,15 +37,24 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Install KDE Plasma Desktop, display server, terminal, and dependencies
+    - name: Install Minimal MATE Desktop, XRDP, CJK Fonts, and WeChat Qt Runtimes
       ansible.builtin.apt:
         name:
-          # --- Core Desktop, Terminal & XRDP ---
-          - kde-plasma-desktop
-          - konsole
+          # --- Core Desktop & XRDP ---
+          - mate-desktop-environment-core
+          - mate-terminal
           - xrdp
           - xorgxrdp
           - dbus-x11
+
+          # --- WeChat Qt / XCB Runtime Dependencies ---
+          - libxkbcommon-x11-0
+          - libxcb-xinerama0
+          - libxcb-icccm4
+          - libsecret-1-0
+          - libnss3
+          - libqt5widgets5
+          - libqt5gui5
 
           # --- CJK Chinese Fonts ---
           - fonts-wqy-microhei
@@ -111,18 +120,14 @@
         shell: /bin/bash
         create_home: yes
 
-    # 5. Pin KDE Plasma executable session target with environment flags
-    - name: Pin KDE Plasma executable session target
+    # 5. Pin MATE executable session target natively
+    - name: Pin MATE executable session target
       ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
         mode: '0755'
-        content: |
-          #!/bin/sh
-          export XDG_SESSION_TYPE=x11
-          export XDG_CURRENT_DESKTOP=KDE
-          exec startplasma-x11
+        content: "mate-session"
 
     # ==========================================================================
     # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
@@ -163,11 +168,10 @@
         content: |
           [Desktop Entry]
           Type=Application
-          Exec=sh -c "sleep 3 && /usr/bin/wechat --no-sandbox --disable-gpu"
+          Exec=sh -c "sleep 2 && /usr/bin/wechat --no-sandbox --disable-gpu"
           Hidden=false
           NoDisplay=false
-          X-GNOME-Autostart-enabled=true
-          X-KDE-autostart-after=panel
+          X-MATE-Autostart-enabled=true
           Name=WeChat
 
     # ==========================================================================
