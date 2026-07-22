@@ -11,6 +11,7 @@
     wechat_download_url: "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_x86_64.deb"
 
   tasks:
+  
     # ==========================================================================
     # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE
     # ==========================================================================
@@ -36,17 +37,32 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Install lightweight XFCE Desktop wrapper and display servers
+    - name: Install XFCE Desktop, display server, and WeChat runtime dependencies
       apt:
         name:
+          # --- Core Desktop & XRDP ---
           - xfce4
           - xfce4-terminal
           - xrdp
           - xorgxrdp
+          - dbus-x11
+
+          # --- Electron Runtime Libraries ---
           - libxkbcommon-x11-0
           - libxcb-xinerama0
           - libsecret-1-0
           - libnss3
+
+          # --- CJK Chinese Fonts ---
+          - fonts-wqy-microhei
+          - fonts-wqy-zenhei
+          - xfonts-wqy
+
+          # --- Notifications, Clipboard & File Handlers ---
+          - xfce4-notifyd
+          - xfce4-clipman-plugin
+          - xdg-utils
+          - thunar
         state: present
 
     - name: Allow non-console users to launch Xorg display server
@@ -56,14 +72,6 @@
         line: 'allowed_users=anybody'
         create: yes
         mode: '0644'
-
-    - name: Install CJK font libraries to resolve Chinese character rendering
-      apt:
-        name:
-          - fonts-wqy-microhei
-          - fonts-wqy-zenhei
-          - xfonts-wqy
-        state: present
 
     # ==========================================================================
     # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS (STABILIZED)
