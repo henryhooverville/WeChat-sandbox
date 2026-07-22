@@ -1,4 +1,8 @@
 #cloud-config
+
+bootcmd:
+  - sh -c 'tr -d "\r\n" < /proc/cmdline > /run/cmdline && echo " autoinstall" >> /run/cmdline && mount -n --bind -o ro /run/cmdline /proc/cmdline'
+
 autoinstall:
   version: 1
   interactive-sections: []
