@@ -40,10 +40,13 @@
       apt:
         name:
           - xfce4
-          - xfce4-goodies
+          - xfce4-terminal
           - xrdp
           - xorgxrdp
-          - dbus-x11
+          - libxkbcommon-x11-0
+          - libxcb-xinerama0
+          - libsecret-1-0
+          - libnss3
         state: present
 
     - name: Allow non-console users to launch Xorg display server
