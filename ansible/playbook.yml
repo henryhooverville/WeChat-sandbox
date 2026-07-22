@@ -46,6 +46,7 @@
           - xrdp
           - xorgxrdp
           - dbus-x11
+          - falkon
 
           # --- Group 1: File & Disk Handling ---
           - caja
