@@ -13,7 +13,7 @@
   tasks:
 
     # ==========================================================================
-    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE (MATE)
+    # PHASE 1: GRAPHICAL ENVIRONMENT & FUNCTIONAL BUNDLES (MATE BASE)
     # ==========================================================================
     - name: Update apt package cache safely
       ansible.builtin.apt:
@@ -37,17 +37,37 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Install Minimal MATE Desktop, XRDP, CJK Fonts, and WeChat Qt Runtimes
+    - name: Install MATE Base, XRDP, and Targeted Capability Groups
       ansible.builtin.apt:
         name:
-          # --- Core Desktop & XRDP ---
+          # --- Core Desktop & XRDP Pipeline ---
           - mate-desktop-environment-core
           - mate-terminal
           - xrdp
           - xorgxrdp
           - dbus-x11
 
-          # --- WeChat Qt / XCB Runtime Dependencies ---
+          # --- Group 1: File & Disk Handling ---
+          - caja
+          - caja-open-terminal
+          - xdg-desktop-portal-gtk
+          - xdg-utils
+
+          # --- Group 2: Media & Document Previews ---
+          - eom
+          - atril
+
+          # --- Group 3: System Tray, Notifications & Themes ---
+          - mate-notification-daemon
+          - libnotify-bin
+          - libayatana-appindicator3-1
+          - mate-themes
+
+          # --- Group 4: Audio Subsystem ---
+          - pulseaudio
+          - mate-media
+
+          # --- WeChat Qt / XCB Shared Runtimes ---
           - libxkbcommon-x11-0
           - libxcb-xinerama0
           - libxcb-icccm4
@@ -61,9 +81,6 @@
           - fonts-wqy-zenhei
           - xfonts-wqy
           - fonts-noto-cjk
-
-          # --- Desktop Utilities ---
-          - xdg-utils
         state: present
 
     - name: Allow non-console users to launch Xorg display server
