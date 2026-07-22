@@ -58,7 +58,12 @@
           - eom
           - atril
 
-          # --- Group 3: System Tray, Notifications & Themes ---
+          # --- Group 3: System Tray, Start Menu, Notifications & Themes ---
+          - brisk-menu               # Searchable single-button Start Menu
+          - mate-applets             # Core panel applet framework
+          - mate-menus               # Freemedesktop menu specification generator
+          - dconf-cli                # Panel layout backend manager
+          - dconf-gsettings-backend  # Settings persistence across XRDP sessions
           - mate-notification-daemon
           - libnotify-bin
           - libayatana-appindicator3-1
