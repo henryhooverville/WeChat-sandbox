@@ -13,15 +13,15 @@
   tasks:
   
     # ==========================================================================
-    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE
+    # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE (KDE PLASMA)
     # ==========================================================================
     - name: Update apt package cache safely
-      apt:
+      ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 3600
 
     - name: Install core system automation tools and unattended-upgrades
-      apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - wget
@@ -30,39 +30,30 @@
         state: present
 
     - name: Enable native automated background security patching
-      copy:
+      ansible.builtin.copy:
         dest: /etc/apt/apt.conf.d/20auto-upgrades
         mode: '0644'
         content: |
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Install XFCE Desktop, display server, and WeChat runtime dependencies
-      apt:
+    - name: Install KDE Plasma Desktop, display server, and dependencies
+      ansible.builtin.apt:
         name:
           # --- Core Desktop & XRDP ---
-          - xfce4
-          - xfce4-terminal
+          - kde-plasma-desktop
           - xrdp
           - xorgxrdp
           - dbus-x11
-
-          # --- Electron Runtime Libraries ---
-          - libxkbcommon-x11-0
-          - libxcb-xinerama0
-          - libsecret-1-0
-          - libnss3
 
           # --- CJK Chinese Fonts ---
           - fonts-wqy-microhei
           - fonts-wqy-zenhei
           - xfonts-wqy
+          - fonts-noto-cjk
 
-          # --- Notifications, Clipboard & File Handlers ---
-          - xfce4-notifyd
-          - xfce4-clipman-plugin
+          # --- Desktop Utilities ---
           - xdg-utils
-          - thunar
         state: present
 
     - name: Allow non-console users to launch Xorg display server
@@ -74,7 +65,7 @@
         mode: '0644'
 
     # ==========================================================================
-    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS (STABILIZED)
+    # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS
     # ==========================================================================
 
     # 1. Enable Hyper-V VSOCK kernel module driver on boot
@@ -84,7 +75,7 @@
         content: "hv_sock"
         mode: '0644'
 
-    # 2. Configure XRDP Globals natively via ini_file (un-greys Enhanced Session)
+    # 2. Configure XRDP Globals natively via ini_file
     - name: Force XRDP to operate strictly over Hyper-V VSock architecture
       ansible.builtin.ini_file:
         path: /etc/xrdp/xrdp.ini
@@ -98,7 +89,7 @@
         - { option: 'autorun', value: 'Xorg' }
       notify: Restart XRDP
 
-    # 3. Configure auto-login credentials natively in Xorg target section
+    # 3. Configure auto-login credentials natively in Xorg section
     - name: Configure XRDP Xorg Auto-Login Credentials
       ansible.builtin.ini_file:
         path: /etc/xrdp/xrdp.ini
@@ -110,16 +101,7 @@
         - { option: 'password', value: 'WeChat-User' }
       notify: Restart XRDP
 
-    # 4. Permit non-console users to spin up Xorg instances (prevents input/GUI freeze)
-    - name: Allow non-console users to launch Xorg display server
-      ansible.builtin.lineinfile:
-        path: /etc/X11/Xwrapper.config
-        regexp: '^allowed_users='
-        line: 'allowed_users=anybody'
-        create: yes
-        mode: '0644'
-
-    # 5. Create guest user account bound to primary guest_group
+    # 4. Create guest user account bound to primary guest_group
     - name: Ensure guest user exists
       ansible.builtin.user:
         name: "{{ guest_user }}"
@@ -128,14 +110,14 @@
         shell: /bin/bash
         create_home: yes
 
-    # 6. Bind XFCE executable session target (mode 0755 prevents GUI freeze)
-    - name: Pin XFCE executable session target
+    # 5. RE-POINTED: Pin KDE Plasma executable session target
+    - name: Pin KDE Plasma executable session target
       ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
         mode: '0755'
-        content: "startxfce4"
+        content: "startplasma-x11"
 
     # ==========================================================================
     # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
