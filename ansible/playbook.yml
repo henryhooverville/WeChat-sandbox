@@ -11,7 +11,7 @@
     wechat_download_url: "https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_x86_64.deb"
 
   tasks:
-  
+
     # ==========================================================================
     # PHASE 1: GRAPHICAL ENVIRONMENT & LOCALIZATION BASE (KDE PLASMA)
     # ==========================================================================
@@ -37,11 +37,12 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
 
-    - name: Install KDE Plasma Desktop, display server, and dependencies
+    - name: Install KDE Plasma Desktop, display server, terminal, and dependencies
       ansible.builtin.apt:
         name:
-          # --- Core Desktop & XRDP ---
+          # --- Core Desktop, Terminal & XRDP ---
           - kde-plasma-desktop
+          - konsole
           - xrdp
           - xorgxrdp
           - dbus-x11
@@ -110,39 +111,51 @@
         shell: /bin/bash
         create_home: yes
 
-    # 5. RE-POINTED: Pin KDE Plasma executable session target
+    # 5. Pin KDE Plasma executable session target with environment flags
     - name: Pin KDE Plasma executable session target
       ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.xsession"
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
         mode: '0755'
-        content: "startplasma-x11"
+        content: |
+          #!/bin/sh
+          export XDG_SESSION_TYPE=x11
+          export XDG_CURRENT_DESKTOP=KDE
+          exec startplasma-x11
 
     # ==========================================================================
     # PHASE 3: WECHAT LIFECYCLE DEPLOYMENT
     # ==========================================================================
     - name: Download official native WeChat Linux client from Tencent CDN
-      get_url:
+      ansible.builtin.get_url:
         url: "{{ wechat_download_url }}"
         dest: "/tmp/wechat-client.deb"
         mode: '0644'
 
     - name: Install WeChat package and resolve dependencies automatically
-      apt:
+      ansible.builtin.apt:
         deb: "/tmp/wechat-client.deb"
         state: present
 
     - name: Ensure guest desktop autostart target directory path exists
-      file:
+      ansible.builtin.file:
         path: "/home/{{ guest_user }}/.config/autostart"
         state: directory
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
         mode: '0755'
 
+    # Fixes root ownership on parent ~/.config created during directory provisioning
+    - name: Ensure guest user config directory tree is strictly unprivileged
+      ansible.builtin.file:
+        path: "/home/{{ guest_user }}/.config"
+        owner: "{{ guest_user }}"
+        group: "{{ guest_group }}"
+        recurse: yes
+
     - name: Inject XDG autostart manifest to auto-launch WeChat at session initialization
-      copy:
+      ansible.builtin.copy:
         dest: "/home/{{ guest_user }}/.config/autostart/wechat.desktop"
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
@@ -150,29 +163,30 @@
         content: |
           [Desktop Entry]
           Type=Application
-          Exec=/usr/bin/wechat
+          Exec=sh -c "sleep 3 && /usr/bin/wechat --no-sandbox --disable-gpu"
           Hidden=false
           NoDisplay=false
           X-GNOME-Autostart-enabled=true
+          X-KDE-autostart-after=panel
           Name=WeChat
 
     # ==========================================================================
     # PHASE 4: ZERO-TRUST GUEST HARDENING
     # ==========================================================================
     - name: Enforce strict administrative user constraints via PAM wheel control
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/pam.d/su
         regexp: '^#? ?auth\s+required\s+pam_wheel\.so\s+use_uid'
-        line: 'auth       required   pam_wheel.so use_uid group=sudo'
+        line: 'auth        required   pam_wheel.so use_uid group=sudo'
 
     - name: Lockdown the sudo binary permission schema to deny low-privilege execution
-      file:
+      ansible.builtin.file:
         path: /usr/bin/sudo
         mode: '4750'
         group: sudo
 
     - name: Isolate unprivileged guest user home directory permissions
-      file:
+      ansible.builtin.file:
         path: "/home/{{ guest_user }}"
         owner: "{{ guest_user }}"
         group: "{{ guest_group }}"
@@ -182,7 +196,7 @@
     # PHASE 5: GUEST-LEVEL NETWORK BOUNDARY (UFW FIREWALL CONFIGURATION)
     # ==========================================================================
     - name: Initialize default firewall blocking policy postures
-      ufw:
+      community.general.ufw:
         state: enabled
         direction: "{{ item.direction }}"
         policy: "{{ item.policy }}"
@@ -191,19 +205,19 @@
         - { direction: 'outgoing', policy: 'allow' }
 
     - name: Permit all incoming loopback traffic (Required for systemd local DNS resolution)
-      ufw:
+      community.general.ufw:
         rule: allow
         interface: lo
         direction: in
 
     - name: Explicitly permit outbound translation routing to the host NAT gateway IP
-      ufw:
+      community.general.ufw:
         rule: allow
         direction: out
         to_ip: "192.168.250.1"
 
     - name: Enforce stateless drops targeting all RFC1918 internal subnets
-      ufw:
+      community.general.ufw:
         rule: deny
         direction: out
         to_ip: "{{ item }}"
@@ -216,7 +230,7 @@
     # CLEANUP
     # ==========================================================================
     - name: Clear temporary package installers out of transient disk space
-      file:
+      ansible.builtin.file:
         path: "/tmp/wechat-client.deb"
         state: absent
 
@@ -227,6 +241,6 @@
 
   handlers:
     - name: Restart XRDP
-      service:
+      ansible.builtin.service:
         name: xrdp
         state: restarted
