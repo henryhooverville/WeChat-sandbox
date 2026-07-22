@@ -69,11 +69,13 @@
           - pulseaudio-module-xrdp
           - mate-media
 
-          # --- Group 5: Fcitx 5 Chinese Input Method Engine ---
+          # --- Group 5: Fcitx 5 Chinese Input & Cloud Autocomplete ---
           - fcitx5
-          - fcitx5-chinese-addons
-          - fcitx5-frontend-qt5
-          - fcitx5-frontend-gtk3
+          - fcitx5-chinese-addons     # Core Pinyin & Shuangpin engine
+          - fcitx5-module-cloudpinyin # Cloud-based smart candidate suggestions
+          - fcitx5-config-qt          # GUI configuration tool in MATE Control Center
+          - fcitx5-frontend-qt5       # Native input support for WeChat (Qt)
+          - fcitx5-frontend-gtk3      # Native input support for MATE/Falkon (GTK)
 
           # --- WeChat Qt / XCB Shared Runtimes ---
           - libxkbcommon-x11-0
