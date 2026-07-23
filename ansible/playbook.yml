@@ -68,8 +68,9 @@
           - mate-themes
 
           # --- Group 4: Audio Subsystem & RDP Redirect ---
-          - pulseaudio
-          - pulseaudio-module-xrdp
+          - pipewire
+          - pipewire-pusle
+          - pipewire-module-xrdp
           - mate-media
 
           # --- Group 5: Fcitx 5 Chinese Input & Cloud Autocomplete ---
