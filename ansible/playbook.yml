@@ -15,19 +15,17 @@
     # ==========================================================================
     # PHASE 1: GRAPHICAL ENVIRONMENT & FUNCTIONAL BUNDLES (MATE BASE)
     # ==========================================================================
-    - name: Update apt package cache safely
+    - name: Install software-properties-common for repository management
       ansible.builtin.apt:
-        update_cache: yes
-        cache_valid_time: 3600
-
-    - name: Install core system automation tools and unattended-upgrades
-      ansible.builtin.apt:
-        name:
-          - ca-certificates
-          - wget
-          - gnupg
-          - unattended-upgrades
+        name: software-properties-common
         state: present
+        update_cache: yes
+
+    - name: Ensure Ubuntu universe repository is enabled
+      ansible.builtin.apt_repository:
+        repo: "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+        state: present
+        update_cache: yes
 
     - name: Enable native automated background security patching
       ansible.builtin.copy:
@@ -59,11 +57,11 @@
           - atril
 
           # --- Group 3: System Tray, Start Menu, Notifications & Themes ---
-          - brisk-menu               # Searchable single-button Start Menu
-          - mate-applets             # Core panel applet framework
-          - mate-menus               # Freemedesktop menu specification generator
-          - dconf-cli                # Panel layout backend manager
-          - dconf-gsettings-backend  # Settings persistence across XRDP sessions
+          - mate-applet-brisk-menu
+          - mate-applets
+          - mate-menus
+          - dconf-cli
+          - dconf-gsettings-backend
           - mate-notification-daemon
           - libnotify-bin
           - libayatana-appindicator3-1
@@ -76,11 +74,11 @@
 
           # --- Group 5: Fcitx 5 Chinese Input & Cloud Autocomplete ---
           - fcitx5
-          - fcitx5-chinese-addons     # Core Pinyin & Shuangpin engine
-          - fcitx5-module-cloudpinyin # Cloud-based smart candidate suggestions
-          - fcitx5-config-qt          # GUI configuration tool in MATE Control Center
-          - fcitx5-frontend-qt5       # Native input support for WeChat (Qt)
-          - fcitx5-frontend-gtk3      # Native input support for MATE/Falkon (GTK)
+          - fcitx5-chinese-addons
+          - fcitx5-module-cloudpinyin
+          - fcitx5-config-qt
+          - fcitx5-frontend-qt5
+          - fcitx5-frontend-gtk3
 
           # --- WeChat Qt / XCB Shared Runtimes ---
           - libxkbcommon-x11-0
@@ -105,20 +103,6 @@
         line: 'allowed_users=anybody'
         create: yes
         mode: '0644'
-
-    # Prevents XRDP deadlocks caused by screen locking/blanking
-    - name: Disable MATE screensaver and power management system-wide
-      ansible.builtin.copy:
-        dest: /usr/share/glib-2.0/schemas/30_mate-no-lock.gschema.override
-        mode: '0644'
-        content: |
-          [org.mate.screensaver]
-          lock-enabled=false
-          idle-activation-enabled=false
-
-          [org.mate.power-manager]
-          sleep-display-ac=0
-      notify: Compile GLib Schemas
 
     # ==========================================================================
     # PHASE 2: VSOCK XRDP PIPELINE & AUTO-LOGIN MECHANICS
