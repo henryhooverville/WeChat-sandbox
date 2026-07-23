@@ -40,6 +40,7 @@
         name:
           # --- Core Desktop & XRDP Pipeline ---
           - mate-desktop-environment-core
+          - mate-indicator-applet
           - mate-terminal
           - xrdp
           - xorgxrdp
