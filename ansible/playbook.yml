@@ -98,6 +98,37 @@
           - fonts-noto-cjk
         state: present
 
+    - name: Set Fcitx5 as system-wide default input framework
+      ansible.builtin.copy:
+        dest: /etc/X11/xinit/xinputrc
+        mode: '0644'
+        content: "run_im fcitx5\n"
+
+    - name: Seed default Pinyin & Wubi input profile system-wide
+      ansible.builtin.copy:
+        dest: /etc/skel/.config/fcitx5/profile
+        mode: '0644'
+        content: |
+          [Groups/0]
+          Name=Default
+          Default Layout=us
+          Default Input Method=pinyin
+
+          [Groups/0/Items/0]
+          Name=keyboard-us
+          Layout=
+
+          [Groups/0/Items/1]
+          Name=pinyin
+          Layout=
+
+          [Groups/0/Items/2]
+          Name=wubi-large
+          Layout=
+
+          [GroupOrder]
+          0=Default
+
     - name: Allow non-console users to launch Xorg display server
       ansible.builtin.lineinfile:
         path: /etc/X11/Xwrapper.config
