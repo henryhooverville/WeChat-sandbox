@@ -98,6 +98,13 @@
           - fonts-noto-cjk
         state: present
 
+    #Chinese Language Options
+    - name: Ensure /etc/skel Fcitx5 directory exists
+      ansible.builtin.file:
+        path: /etc/skel/.config/fcitx5
+        state: directory
+        mode: '0755'
+
     - name: Set Fcitx5 as system-wide default input framework
       ansible.builtin.copy:
         dest: /etc/X11/xinit/xinputrc
