@@ -70,7 +70,7 @@
 
           # --- Group 4: Audio Subsystem & RDP Redirect ---
           - pipewire
-          - pipewire-pusle
+          - pipewire-pulse
           - pipewire-module-xrdp
           - mate-media
 
